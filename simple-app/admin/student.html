@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Student — Admin</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div id="topbar" class="topbar"></div>
+
+  <main class="content">
+    <a href="/admin/students.html" style="color: var(--accent); font-size:13px; font-weight:500; text-decoration:none;">← Back to students</a>
+
+    <div id="loading" class="card" style="margin-top:14px;"><p class="muted">Loading…</p></div>
+
+    <div id="profile-wrap" class="grid-2 hidden" style="margin-top:14px;">
+      <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="card">
+          <div class="flex-between" style="margin-bottom:14px;">
+            <h1 id="p-name" style="font-size:20px;"></h1>
+            <span id="p-status-pill"></span>
+          </div>
+          <div id="p-banner" class="alert alert-danger hidden"></div>
+
+          <div class="field"><label>Full name</label><input class="input" id="p-fullname" /></div>
+          <div class="field"><label>Email (login — cannot be changed here)</label><input class="input" id="p-email" disabled /></div>
+          <div class="field"><label>Phone</label><input class="input" id="p-phone" /></div>
+          <div class="field hidden" id="p-studentid-field"><label>Student ID</label><input class="input" id="p-studentid" disabled /></div>
+          <div class="field"><label>Notes</label><textarea class="input" id="p-notes"></textarea></div>
+
+          <button class="btn btn-primary" id="p-save">Save changes</button>
+
+          <div class="mono muted" style="display:flex; justify-content:space-between; margin-top:14px; padding-top:12px; border-top:1px solid var(--rule); font-size:12px;">
+            <span id="p-added"></span><span id="p-last-active"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 style="font-size:16px; margin-bottom:10px;">Account actions</h2>
+          <div class="action-row" id="p-actions"></div>
+          <p class="muted" id="p-delete-hint" style="font-size:12px; margin-top:8px;">Permanent deletion is only available once an account is disabled.</p>
+        </div>
+      </div>
+
+      <div class="card" id="chat" style="padding:0;">
+        <div class="chat-panel">
+          <div class="chat-header"><h2 style="font-size:16px;">Chat</h2></div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <div id="chat-input-area"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Delete confirmation modal -->
+  <div id="delete-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header"><h2 style="font-size:18px;">Permanently delete student</h2><button class="modal-close" id="close-delete">✕</button></div>
+      <div class="alert alert-danger">This will permanently remove <strong id="delete-name"></strong>'s profile, conversations, messages, and any audio files. This cannot be undone.</div>
+      <div class="field"><label>Type DELETE to confirm</label><input class="input" id="delete-confirm-input" /></div>
+      <div id="delete-error" class="alert alert-danger hidden"></div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" style="flex:1;" id="delete-cancel">Cancel</button>
+        <button class="btn btn-danger" style="flex:1;" id="delete-confirm-btn" disabled>Delete permanently</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset password result modal -->
+  <div id="reset-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header"><h2 style="font-size:18px;">Password reset</h2><button class="modal-close" id="close-reset">✕</button></div>
+      <div class="card mono" style="background:var(--bg); margin:14px 0; font-size:13px;">
+        <div class="flex-between"><span class="muted">Email</span><span id="r-email"></span></div>
+        <div class="flex-between" style="margin-top:6px;"><span class="muted">Temporary password</span><span id="r-password"></span></div>
+      </div>
+      <button class="btn btn-primary btn-block" id="reset-done">Done</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/config.js"></script>
+  <script src="/assets/supabase-client.js"></script>
+  <script src="/assets/auth-guard.js"></script>
+  <script src="/assets/admin-nav.js"></script>
+  <script src="/assets/student-profile.js"></script>
+</body>
+</html>

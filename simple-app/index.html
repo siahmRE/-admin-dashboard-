@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Home — Admin Dashboard</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div id="app" class="center-screen">
+    <p class="muted">Loading…</p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/config.js"></script>
+  <script src="/assets/supabase-client.js"></script>
+  <script src="/assets/auth-guard.js"></script>
+  <script>
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) {
+        window.location.href = "/login.html";
+        return;
+      }
+      if (user.user_metadata?.must_change_password) {
+        window.location.href = "/set-password.html";
+        return;
+      }
+
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("role, status, full_name")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      if (profile.role === "admin") {
+        window.location.href = "/admin/index.html";
+        return;
+      }
+
+      if (profile.status === "disabled") {
+        await sb.auth.signOut();
+        window.location.href = "/login.html";
+        return;
+      }
+
+      // Best-effort activity heartbeat.
+      sb.rpc("record_my_activity").catch(() => {});
+
+      document.getElementById("app").innerHTML = `
+        <div style="text-align:center; max-width: 380px;">
+          <h1 style="font-size:22px; font-weight:600;">Welcome, ${escapeHtml(profile.full_name.split(" ")[0])}</h1>
+          <p class="muted" style="margin-top:8px;">
+            Your student home and chat with your teacher live here.
+          </p>
+          <button class="btn btn-outline" style="margin-top:16px;" onclick="signOut()">Sign out</button>
+        </div>
+      `;
+    })();
+  </script>
+</body>
+</html>

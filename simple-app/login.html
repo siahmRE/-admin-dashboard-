@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Sign in — Admin Dashboard</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div class="center-screen">
+    <div class="auth-card">
+      <div style="text-align:center; margin-bottom: 24px;">
+        <div class="logo-mark">A</div>
+        <h1 style="font-size:22px; font-weight:600;">Sign in</h1>
+        <p class="muted" style="margin-top:6px; font-size:14px;">Use the email and password your teacher gave you.</p>
+      </div>
+
+      <form id="login-form" class="card">
+        <div class="field">
+          <label for="email">Email</label>
+          <input class="input" id="email" type="email" required autocomplete="email" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input class="input" id="password" type="password" required autocomplete="current-password" placeholder="••••••••••" />
+        </div>
+        <div id="error" class="alert alert-danger hidden"></div>
+        <button type="submit" id="submit-btn" class="btn btn-primary btn-block">Sign in</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/config.js"></script>
+  <script src="/assets/supabase-client.js"></script>
+  <script src="/assets/auth-guard.js"></script>
+  <script>
+    const form = document.getElementById("login-form");
+    const errorBox = document.getElementById("error");
+    const submitBtn = document.getElementById("submit-btn");
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.classList.remove("hidden");
+    }
+
+    // If already signed in, skip straight to the right place.
+    (async () => {
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) window.location.href = "/index.html";
+    })();
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.classList.add("hidden");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Signing in…";
+
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const password = document.getElementById("password").value;
+
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+      if (error || !data.user) {
+        showError("Incorrect email or password.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign in";
+        return;
+      }
+
+      const { data: profile } = await sb
+        .from("profiles")
+        .select("role, status")
+        .eq("id", data.user.id)
+        .single();
+
+      if (!profile) {
+        await sb.auth.signOut();
+        showError("No profile found for this account. Contact your teacher.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign in";
+        return;
+      }
+
+      // Supabase Auth doesn't know about our "disabled" status, so we check
+      // it here and sign a disabled account back out immediately. Every
+      // other table is also locked to disabled accounts via RLS regardless.
+      if (profile.status === "disabled") {
+        await sb.auth.signOut();
+        showError("This account has been disabled. Contact your teacher.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Sign in";
+        return;
+      }
+
+      window.location.href = profile.role === "admin" ? "/admin/index.html" : "/index.html";
+    });
+  </script>
+</body>
+</html>

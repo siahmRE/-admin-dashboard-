@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Students — Admin</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div id="topbar" class="topbar"></div>
+
+  <main class="content">
+    <div class="flex-between" style="margin-bottom: 14px;">
+      <div>
+        <h1 style="font-size:22px;">Students</h1>
+        <p class="mono muted" id="cap-line" style="margin-top:4px; font-size:13px;">— / 80 active</p>
+      </div>
+      <button class="btn btn-primary" id="add-btn">+ Add Student</button>
+    </div>
+
+    <input class="input" id="search" placeholder="Search by name, email, or phone…" style="max-width:400px; margin-bottom:14px;" />
+
+    <div id="banner" class="alert alert-neutral hidden"></div>
+
+    <div class="table-wrap" id="table-wrap">
+      <p class="muted" style="padding:24px; text-align:center;">Loading…</p>
+    </div>
+    <div class="student-cards" id="card-list"></div>
+  </main>
+
+  <!-- Add Student modal -->
+  <div id="add-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 style="font-size:18px;">Add New Student</h2>
+        <button class="modal-close" id="close-add">✕</button>
+      </div>
+      <form id="add-form">
+        <div class="field">
+          <label>Full name <span class="required">*</span></label>
+          <input class="input" id="f-name" required placeholder="e.g. Amina El Fassi" />
+        </div>
+        <div class="field">
+          <label>Email <span class="required">*</span></label>
+          <input class="input" id="f-email" type="email" required placeholder="student@example.com" />
+        </div>
+        <div class="field">
+          <label>Phone (optional)</label>
+          <input class="input" id="f-phone" placeholder="For your records only — no SMS is sent" />
+        </div>
+        <button type="button" id="toggle-optional" class="btn-sm accent" style="padding-left:0;">+ Add student ID or notes</button>
+        <div id="optional-fields" class="hidden" style="margin-top:12px;">
+          <div class="field"><label>Student ID (optional)</label><input class="input" id="f-studentid" /></div>
+          <div class="field"><label>Notes (optional)</label><textarea class="input" id="f-notes"></textarea></div>
+        </div>
+        <div id="add-error" class="alert alert-danger hidden" style="margin-top:12px;"></div>
+        <button type="submit" id="add-submit" class="btn btn-primary btn-block" style="margin-top:14px;">Create Student</button>
+      </form>
+
+      <div id="add-success" class="hidden">
+        <p style="font-size:14px; color:var(--ink-soft);">Share this login with the student through a private channel. They'll set their own password on first login.</p>
+        <div class="card mono" style="background:var(--bg); margin:14px 0; font-size:13px;">
+          <div class="flex-between"><span class="muted">Email</span><span id="s-email"></span></div>
+          <div class="flex-between" style="margin-top:6px;"><span class="muted">Temporary password</span><span id="s-password"></span></div>
+        </div>
+        <button class="btn btn-outline btn-block" id="copy-creds">Copy login details</button>
+        <button class="btn btn-primary btn-block" id="add-done" style="margin-top:10px;">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reset password result modal -->
+  <div id="reset-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header"><h2 style="font-size:18px;">Password reset</h2><button class="modal-close" id="close-reset">✕</button></div>
+      <p style="font-size:14px; color:var(--ink-soft);">A new temporary password was generated. Share it through a private channel — it won't be shown again.</p>
+      <div class="card mono" style="background:var(--bg); margin:14px 0; font-size:13px;">
+        <div class="flex-between"><span class="muted">Email</span><span id="r-email"></span></div>
+        <div class="flex-between" style="margin-top:6px;"><span class="muted">Temporary password</span><span id="r-password"></span></div>
+      </div>
+      <button class="btn btn-outline btn-block" id="copy-reset">Copy login details</button>
+      <button class="btn btn-primary btn-block" id="reset-done" style="margin-top:10px;">Done</button>
+    </div>
+  </div>
+
+  <!-- Delete confirmation modal -->
+  <div id="delete-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header"><h2 style="font-size:18px;">Permanently delete student</h2><button class="modal-close" id="close-delete">✕</button></div>
+      <div class="alert alert-danger">This will permanently remove <strong id="delete-name"></strong>'s profile, conversations, messages, and any audio files. This cannot be undone.</div>
+      <div class="field"><label>Type DELETE to confirm</label><input class="input" id="delete-confirm-input" /></div>
+      <div id="delete-error" class="alert alert-danger hidden"></div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" style="flex:1;" id="delete-cancel">Cancel</button>
+        <button class="btn btn-danger" style="flex:1;" id="delete-confirm-btn" disabled>Delete permanently</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/config.js"></script>
+  <script src="/assets/supabase-client.js"></script>
+  <script src="/assets/auth-guard.js"></script>
+  <script src="/assets/admin-nav.js"></script>
+  <script src="/assets/students.js"></script>
+</body>
+</html>
