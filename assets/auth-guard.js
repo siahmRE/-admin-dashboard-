@@ -5,30 +5,48 @@
 // read another student's data or act as an admin.
 
 async function getCurrentUserAndProfile() {
-  const { data: { user } } = await sb.auth.getUser();
+  const { data: userData, error: userErr } = await sb.auth.getUser();
+  if (userErr) throw userErr;
+  const user = userData.user;
   if (!user) return { user: null, profile: null };
 
-  const { data: profile } = await sb
+  const { data: profile, error: profileErr } = await sb
     .from("profiles")
     .select("id, full_name, email, role, status")
     .eq("id", user.id)
     .single();
 
+  if (profileErr) throw profileErr;
+
   return { user, profile };
 }
 
-// Call at the top of every /admin/*.html page.
 async function requireAdminOrRedirect() {
-  const { user, profile } = await getCurrentUserAndProfile();
-  if (!user) {
-    window.location.href = "/login.html";
+  try {
+    const { user, profile } = await getCurrentUserAndProfile();
+    if (!user) {
+      window.location.href = "/login.html";
+      return null;
+    }
+    if (!profile || profile.role !== "admin") {
+      window.location.href = "/index.html";
+      return null;
+    }
+    return profile;
+  } catch (err) {
+    showFatalErrorOnPage(err);
     return null;
   }
-  if (!profile || profile.role !== "admin") {
-    window.location.href = "/index.html";
-    return null;
-  }
-  return profile;
+}
+
+function showFatalErrorOnPage(err) {
+  const target = document.querySelector("main.content") || document.body;
+  const message = err && err.message ? err.message : String(err);
+  const box = document.createElement("div");
+  box.className = "alert alert-danger";
+  box.style.margin = "20px";
+  box.innerHTML = `<strong>Something went wrong:</strong> <span class="mono">${escapeHtml(message)}</span>`;
+  target.prepend(box);
 }
 
 // Call at the top of the student home page.
