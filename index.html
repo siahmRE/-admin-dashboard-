@@ -18,51 +18,69 @@
   <script src="/assets/supabase-client.js"></script>
   <script src="/assets/auth-guard.js"></script>
   <script>
-    (async () => {
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) {
-        window.location.href = "/login.html";
-        return;
-      }
-      if (user.user_metadata?.must_change_password) {
-        window.location.href = "/set-password.html";
-        return;
-      }
-
-      const { data: profile } = await sb
-        .from("profiles")
-        .select("role, status, full_name")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile) {
-        window.location.href = "/login.html";
-        return;
-      }
-
-      if (profile.role === "admin") {
-        window.location.href = "/admin/index.html";
-        return;
-      }
-
-      if (profile.status === "disabled") {
-        await sb.auth.signOut();
-        window.location.href = "/login.html";
-        return;
-      }
-
-      // Best-effort activity heartbeat.
-      sb.rpc("record_my_activity").catch(() => {});
-
+    function showFatalError(err) {
       document.getElementById("app").innerHTML = `
-        <div style="text-align:center; max-width: 380px;">
-          <h1 style="font-size:22px; font-weight:600;">Welcome, ${escapeHtml(profile.full_name.split(" ")[0])}</h1>
-          <p class="muted" style="margin-top:8px;">
-            Your student home and chat with your teacher live here.
-          </p>
-          <button class="btn btn-outline" style="margin-top:16px;" onclick="signOut()">Sign out</button>
+        <div style="text-align:center; max-width: 480px;">
+          <p style="font-weight:600; color:var(--danger);">Something went wrong loading this page.</p>
+          <p class="mono" style="font-size:12px; color:var(--ink-faint); margin-top:10px; word-break:break-word; text-align:left; background:var(--surface); border:1px solid var(--rule); border-radius:8px; padding:10px;">${escapeHtml(String(err && err.message ? err.message : err))}</p>
+          <a href="/login.html" class="btn btn-outline" style="margin-top:14px; display:inline-block;">Back to sign in</a>
         </div>
       `;
+    }
+
+    (async () => {
+      try {
+        const { data, error: userErr } = await sb.auth.getUser();
+        if (userErr) throw userErr;
+        const user = data.user;
+
+        if (!user) {
+          window.location.href = "/login.html";
+          return;
+        }
+        if (user.user_metadata?.must_change_password) {
+          window.location.href = "/set-password.html";
+          return;
+        }
+
+        const { data: profile, error: profileErr } = await sb
+          .from("profiles")
+          .select("role, status, full_name")
+          .eq("id", user.id)
+          .single();
+
+        if (profileErr) throw profileErr;
+
+        if (!profile) {
+          window.location.href = "/login.html";
+          return;
+        }
+
+        if (profile.role === "admin") {
+          window.location.href = "/admin/index.html";
+          return;
+        }
+
+        if (profile.status === "disabled") {
+          await sb.auth.signOut();
+          window.location.href = "/login.html";
+          return;
+        }
+
+        sb.rpc("record_my_activity").catch(() => {});
+
+        document.getElementById("app").innerHTML = `
+          <div style="text-align:center; max-width: 380px;">
+            <h1 style="font-size:22px; font-weight:600;">Welcome, ${escapeHtml(profile.full_name.split(" ")[0])}</h1>
+            <p class="muted" style="margin-top:8px;">
+              Your student home and chat with your teacher live here.
+            </p>
+            <button class="btn btn-outline" style="margin-top:16px;" onclick="signOut()">Sign out</button>
+          </div>
+        `;
+      } catch (err) {
+        showFatalError(err);
+      }
     })();
   </script>
 </body>
