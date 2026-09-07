@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Dashboard — Admin</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/assets/icon-192.png" />
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <div id="topbar" class="topbar"></div>
+
+  <main class="content">
+    <div class="flex-between" style="margin-bottom: 6px;">
+      <div>
+        <h1 style="font-size:24px;">Dashboard</h1>
+        <p class="muted" style="margin-top:4px; font-size:14px;">Roster status and recent activity, at a glance.</p>
+      </div>
+      <a href="/admin/students.html?add=1" class="btn btn-primary">+ Add Student</a>
+    </div>
+
+    <div class="stat-grid" id="stat-grid">
+      <div class="card"><p class="muted">Loading…</p></div>
+    </div>
+
+    <div class="flex-between" style="margin-bottom: 10px;">
+      <h2 style="font-size:17px;">Recent activity</h2>
+      <a href="/admin/students.html" style="color: var(--accent); font-size:13px; font-weight:500; text-decoration:none;">View all students →</a>
+    </div>
+    <div class="table-wrap" id="recent-activity">
+      <p class="muted" style="padding: 24px; text-align:center;">Loading…</p>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/assets/config.js"></script>
+  <script src="/assets/supabase-client.js"></script>
+  <script src="/assets/auth-guard.js"></script>
+  <script src="/assets/admin-nav.js"></script>
+  <script>
+    (async () => {
+      const profile = await requireAdminOrRedirect();
+      if (!profile) return;
+      renderAdminHeader("dashboard", profile.full_name);
+
+      const { data: stats } = await sb.rpc("admin_dashboard_stats").single();
+      const active = stats?.active_students ?? 0;
+      const cap = stats?.max_active_students ?? 80;
+      const pct = Math.min(100, Math.round((active / cap) * 100));
+      const r = 22, c = 2 * Math.PI * r;
+      const offset = c - (pct / 100) * c;
+
+      document.getElementById("stat-grid").innerHTML = `
+        <div class="card stat-card">
+          <svg width="56" height="56" viewBox="0 0 56 56" class="ring">
+            <circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--surface-sunken)" stroke-width="5" />
+            <circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--accent)" stroke-width="5"
+              stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${offset}"
+              transform="rotate(-90 28 28)" />
+          </svg>
+          <div>
+            <p class="stat-value">${active}<span class="muted"> / ${cap}</span></p>
+            <p class="stat-label">active students</p>
+          </div>
+        </div>
+        <div class="card">
+          <p class="stat-value">${stats?.total_students ?? 0}</p>
+          <p class="stat-label">Total students</p>
+        </div>
+        <div class="card">
+          <p class="stat-value" style="color: var(--warn);">${stats?.disabled_students ?? 0}</p>
+          <p class="stat-label">Disabled</p>
+        </div>
+        <div class="card">
+          <p class="stat-value" style="color: ${(stats?.unread_messages ?? 0) > 0 ? "var(--accent)" : "var(--ink)"};">${stats?.unread_messages ?? 0}</p>
+          <p class="stat-label">Unread messages</p>
+        </div>
+      `;
+
+      const { data: recent } = await sb
+        .from("profiles")
+        .select("id, full_name, email, status, last_activity_at")
+        .eq("role", "student")
+        .order("last_activity_at", { ascending: false, nullsFirst: false })
+        .limit(6);
+
+      const container = document.getElementById("recent-activity");
+      if (!recent || recent.length === 0) {
+        container.innerHTML = `<p class="muted" style="padding:24px; text-align:center;">No students yet. Add your first student to get started.</p>`;
+        return;
+      }
+
+      container.innerHTML = `<table><tbody>${recent
+        .map(
+          (s) => `
+        <tr>
+          <td>
+            <a href="/admin/student.html?id=${s.id}" style="font-weight:500; text-decoration:none;">${escapeHtml(s.full_name)}</a>
+            <p class="muted" style="font-size:13px; margin:2px 0 0;">${escapeHtml(s.email)}</p>
+          </td>
+          <td style="text-align:right; white-space:nowrap;">
+            <span class="pill pill-${s.status}">${s.status}</span>
+            <span class="mono muted" style="font-size:12px; margin-left:8px;">${s.last_activity_at ? formatDate(s.last_activity_at) : "no activity yet"}</span>
+          </td>
+        </tr>`
+        )
+        .join("")}</tbody></table>`;
+    })();
+  </script>
+</body>
+</html>
